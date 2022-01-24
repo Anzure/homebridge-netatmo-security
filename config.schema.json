@@ -1,5 +1,5 @@
 {
-  "pluginAlias": "ExampleHomebridgePlugin",
+  "pluginAlias": "netatmo-security",
   "pluginType": "platform",
   "singular": true,
   "schema": {
