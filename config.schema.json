@@ -9,7 +9,31 @@
         "title": "Name",
         "type": "string",
         "required": true,
-        "default": "Example Dynamic Platform"
+        "default": "Netatmo Security Platform"
+      },
+      "client_id": {
+        "title": "Client ID",
+        "type": "string",
+        "required": true,
+        "default": ""
+      },
+      "client_secret": {
+        "title": "Client Secret",
+        "type": "string",
+        "required": true,
+        "default": ""
+      },
+      "username": {
+        "title": "Username",
+        "type": "string",
+        "required": true,
+        "default": ""
+      },
+      "password": {
+        "title": "Password",
+        "type": "string",
+        "required": true,
+        "default": ""
       }
     }
   }

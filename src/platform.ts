@@ -1,11 +1,15 @@
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
-import { NetatmoPlatformAccessory } from './accessory/indoorCameraAccessory';
+import { IndoorCameraAccessory } from './accessory/indoorCameraAccessory';
+import { IndoorSirenAccessory } from './accessory/indoorSirenAccessory';
+import { TagSensorAccessory } from './accessory/tagSensorAccessory';
+import { NetatmoAPI } from './util/NetatmoAPI';
 
 export class NetatmoSecurityPlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service = this.api.hap.Service;
   public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
   public readonly accessories: PlatformAccessory[] = [];
+  public netatmoAPI: NetatmoAPI = null;
 
   // Load platform
   constructor(
@@ -14,6 +18,9 @@ export class NetatmoSecurityPlatform implements DynamicPlatformPlugin {
     public readonly api: API,
   ) {
     this.log.debug('Finished initializing platform:', this.config.name);
+    this.log.debug('Authenticating with provider:', this.config.name);
+    this.netatmoAPI = new NetatmoAPI(config);
+    this.log.debug('Authenticated with provider:', this.config.name);
     this.api.on('didFinishLaunching', () => {
       log.debug('Executed didFinishLaunching callback');
       this.discoverDevices();
