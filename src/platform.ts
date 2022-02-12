@@ -1,116 +1,97 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
-
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
-import { ExamplePlatformAccessory } from './platformAccessory';
+import { TagSensorAccessory } from './accessory/tagSensorAccessory';
+import NetatmoAPI from './util/NetatmoAPI';
+import { IndoorSirenAccessory } from './accessory/indoorSirenAccessory';
 
-/**
- * HomebridgePlatform
- * This class is the main constructor for your plugin, this is where you should
- * parse the user config and discover/register accessories with Homebridge.
- */
-export class ExampleHomebridgePlatform implements DynamicPlatformPlugin {
+export class NetatmoSecurityPlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service = this.api.hap.Service;
   public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
-
-  // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
+  public netatmoAPI: NetatmoAPI;
+  public status: Record<string, any> | undefined;
 
+  // Load platform
   constructor(
     public readonly log: Logger,
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
-    this.log.debug('Finished initializing platform:', this.config.name);
-
-    // When this event is fired it means Homebridge has restored all cached accessories from disk.
-    // Dynamic Platform plugins should only register new accessories after this event was fired,
-    // in order to ensure they weren't added to homebridge already. This event can also be used
-    // to start discovery of new accessories.
+    log.info('Finished loading platform:', this.config.name);
+    this.netatmoAPI = new NetatmoAPI(log);
+    log.info('Finished initializing platform:', this.config.name);
     this.api.on('didFinishLaunching', () => {
-      log.debug('Executed didFinishLaunching callback');
-      // run the method to discover / register your devices as accessories
-      this.discoverDevices();
+      log.info('Executed didFinishLaunching callback');
+      log.info('Authenticating with provider:', this.config.name);
+      this.netatmoAPI.init(config).then(() => {
+        log.info('Authenticated with provider:', this.config.name);
+        this.discoverDevices();
+        this.startRefreshTask();
+        log.info('Config loaded: ' + JSON.stringify(config));
+      });
     });
   }
 
-  /**
-   * This function is invoked when homebridge restores cached accessories from disk at startup.
-   * It should be used to setup event handlers for characteristics and update respective values.
-   */
+  // Configure device
   configureAccessory(accessory: PlatformAccessory) {
     this.log.info('Loading accessory from cache:', accessory.displayName);
-
-    // add the restored accessory to the accessories cache so we can track if it has already been registered
     this.accessories.push(accessory);
   }
 
-  /**
-   * This is an example method showing how to register discovered accessories.
-   * Accessories must only be registered once, previously created accessories
-   * must not be registered again to prevent "duplicate UUID" errors.
-   */
+  // Load devices
   discoverDevices() {
+    this.netatmoAPI.getHomeDevices().then((devices) => {
+      this.status = devices;
+      for (const device of devices) {
+        const uuid = this.api.hap.uuid.generate(device.id);
+        const existingAccessory = this.accessories.find(accessory => accessory.UUID === uuid);
 
-    // EXAMPLE ONLY
-    // A real plugin you would discover accessories from the local network, cloud services
-    // or a user-defined array in the platform config.
-    const exampleDevices = [
-      {
-        exampleUniqueId: 'ABCD',
-        exampleDisplayName: 'Bedroom',
-      },
-      {
-        exampleUniqueId: 'EFGH',
-        exampleDisplayName: 'Kitchen',
-      },
-    ];
+        if (existingAccessory) {
+          this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
+          new TagSensorAccessory(this, existingAccessory);
 
-    // loop over the discovered devices and register each one if it has not already been registered
-    for (const device of exampleDevices) {
+        } else if (device.type === 'NACamDoorTag') {
+          this.log.info('Adding new accessory:', device.name);
+          const accessory = new this.api.platformAccessory(device.name, uuid);
+          accessory.context.device = device;
+          new TagSensorAccessory(this, accessory);
+          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
 
-      // generate a unique id for the accessory this should be generated from
-      // something globally unique, but constant, for example, the device serial
-      // number or MAC address
-      const uuid = this.api.hap.uuid.generate(device.exampleUniqueId);
+        } else if (device.type === 'NIS'){
+          this.log.info('Adding new accessory:', device.name);
+          const accessory = new this.api.platformAccessory(device.name, uuid);
+          accessory.context.device = device;
+          new IndoorSirenAccessory(this, accessory);
+          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
 
-      // see if an accessory with the same uuid has already been registered and restored from
-      // the cached devices we stored in the `configureAccessory` method above
-      const existingAccessory = this.accessories.find(accessory => accessory.UUID === uuid);
-
-      if (existingAccessory) {
-        // the accessory already exists
-        this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
-
-        // if you need to update the accessory.context then you should run `api.updatePlatformAccessories`. eg.:
-        // existingAccessory.context.device = device;
-        // this.api.updatePlatformAccessories([existingAccessory]);
-
-        // create the accessory handler for the restored accessory
-        // this is imported from `platformAccessory.ts`
-        new ExamplePlatformAccessory(this, existingAccessory);
-
-        // it is possible to remove platform accessories at any time using `api.unregisterPlatformAccessories`, eg.:
-        // remove platform accessories when no longer present
-        // this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [existingAccessory]);
-        // this.log.info('Removing existing accessory from cache:', existingAccessory.displayName);
-      } else {
-        // the accessory does not yet exist, so we need to create it
-        this.log.info('Adding new accessory:', device.exampleDisplayName);
-
-        // create a new accessory
-        const accessory = new this.api.platformAccessory(device.exampleDisplayName, uuid);
-
-        // store a copy of the device object in the `accessory.context`
-        // the `context` property can be used to store any data about the accessory you may need
-        accessory.context.device = device;
-
-        // create the accessory handler for the newly create accessory
-        // this is imported from `platformAccessory.ts`
-        new ExamplePlatformAccessory(this, accessory);
-
-        // link the accessory to your platform
-        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+        } else {
+          this.log.info('Unsupported device type: ' + device.type);
+        }
       }
-    }
+    });
   }
+
+  // Refresh task
+  startRefreshTask() {
+    this.refreshStatus();
+    setInterval(() => {
+      try {
+        this.refreshStatus();
+      } catch (error){
+        this.log.error('Failed to refresh status: ', this.config.name);
+      }
+    }, 10000);
+  }
+
+  // Refresh status
+  refreshStatus() {
+    this.log.info('Refreshing home status: ', this.config.name);
+    this.netatmoAPI.getHomeDevices().then((status) => {
+      this.log.info('Home status: ' + status);
+      this.status = status;
+      this.log.info('Refreshed home status: ', this.config.name);
+    });
+  }
+
 }

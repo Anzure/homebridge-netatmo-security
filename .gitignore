@@ -1,3 +1,4 @@
+.vscode/
 # Ignore compiled code
 dist
 
