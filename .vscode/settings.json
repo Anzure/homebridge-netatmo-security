@@ -3,6 +3,34 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": true
   },
-  "editor.rulers": [ 140 ],
-  "eslint.enable": true
+  "editor.rulers": [140],
+  "eslint.enable": true,
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    ".github": true,
+    "LICENSE": true,
+    ".gitignore": true,
+    ".npmignore": true,
+    ".vscode": true,
+    "tsconfig.json": true,
+    "nodemon.json": true,
+    ".eslintrc": true,
+    "package-lock.json": true,
+    "node_modules": true,
+    "dist": true
+  },
+  "explorerExclude.backup": {},
+  "editor.formatOnSave": false,
+  "editor.defaultFormatter": null,
+  "solidity.formatter": "none",
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "jsFileHeader.Copyright": "Odit AS [NO]",
+  "jsFileHeader.Author": "Andre Mathisen"
 }

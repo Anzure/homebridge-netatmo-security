@@ -21,7 +21,18 @@
         "title": "Client Secret",
         "type": "string",
         "required": true,
-        "default": ""
+        "default": "",
+        "condition": {
+          "functionBody": "return model.hide_client_secret === false || model.hide_client_secret.length <= 0;"
+        }
+      },
+      "hide_client_secret": {
+        "title": "Hide Client Secret?",
+        "type": "boolean",
+        "default": false,
+        "condition": {
+          "functionBody": "return model.client_secret != null && model.client_secret.length > 0;"
+        }
       },
       "username": {
         "title": "Username",
@@ -33,7 +44,18 @@
         "title": "Password",
         "type": "string",
         "required": true,
-        "default": ""
+        "default": "",
+        "condition": {
+          "functionBody": "return model.hide_password === false || model.password.length <= 0;"
+        }
+      },
+      "hide_password": {
+        "title": "Hide Password?",
+        "type": "boolean",
+        "default": false,
+        "condition": {
+          "functionBody": "return model.password != null && model.password.length > 0;"
+        }
       }
     }
   }

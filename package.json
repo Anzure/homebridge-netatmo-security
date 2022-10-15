@@ -2,7 +2,7 @@
   "displayName": "Homebridge Netatmo Security",
   "name": "homebridge-netatmo-security",
   "version": "1.2.0",
-  "description": "Extended support for Netatmo Security prouects",
+  "description": "Extended support for Netatmo Security products",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

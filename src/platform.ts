@@ -3,14 +3,12 @@ import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { TagSensorAccessory } from './accessory/tagSensorAccessory';
 import NetatmoAPI from './util/NetatmoAPI';
-import { IndoorSirenAccessory } from './accessory/indoorSirenAccessory';
 
 export class NetatmoSecurityPlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service = this.api.hap.Service;
   public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
   public readonly accessories: PlatformAccessory[] = [];
   public netatmoAPI: NetatmoAPI;
-  public status: Record<string, any> | undefined;
 
   // Load platform
   constructor(
@@ -35,38 +33,41 @@ export class NetatmoSecurityPlatform implements DynamicPlatformPlugin {
 
   // Configure device
   configureAccessory(accessory: PlatformAccessory) {
+
+    if (accessory.context.device.type !== 'NACamDoorTag') {
+      this.log.warn('Device type not supported: ' + accessory.context.device.type);
+      return;
+    }
+
     this.log.info('Loading accessory from cache:', accessory.displayName);
+    new TagSensorAccessory(this, accessory);
     this.accessories.push(accessory);
   }
 
   // Load devices
   discoverDevices() {
     this.netatmoAPI.getHomeDevices().then((devices) => {
-      this.status = devices;
       for (const device of devices) {
+
+        if (device.type !== 'NACamDoorTag') {
+          this.log.debug('Device type not supported: ' + device.type);
+          continue;
+        }
+
         const uuid = this.api.hap.uuid.generate(device.id);
         const existingAccessory = this.accessories.find(accessory => accessory.UUID === uuid);
 
         if (existingAccessory) {
-          this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
-          new TagSensorAccessory(this, existingAccessory);
-
-        } else if (device.type === 'NACamDoorTag') {
-          this.log.info('Adding new accessory:', device.name);
-          const accessory = new this.api.platformAccessory(device.name, uuid);
-          accessory.context.device = device;
-          new TagSensorAccessory(this, accessory);
-          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-
-        } else if (device.type === 'NIS'){
-          this.log.info('Adding new accessory:', device.name);
-          const accessory = new this.api.platformAccessory(device.name, uuid);
-          accessory.context.device = device;
-          new IndoorSirenAccessory(this, accessory);
-          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+          this.log.info('Existing accessory discovered:', existingAccessory.displayName);
+          this.configureAccessory(existingAccessory);
+          existingAccessory.context.device = device;
 
         } else {
-          this.log.info('Unsupported device type: ' + device.type);
+          this.log.info('Adding newly discovered accessory:', device.name);
+          const accessory = new this.api.platformAccessory(device.name, uuid);
+          accessory.context.device = device;
+          this.configureAccessory(accessory);
+          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
         }
       }
     });
@@ -81,17 +82,12 @@ export class NetatmoSecurityPlatform implements DynamicPlatformPlugin {
       } catch (error){
         this.log.error('Failed to refresh status: ', this.config.name);
       }
-    }, 10000);
+    }, 20000);
   }
 
   // Refresh status
   refreshStatus() {
-    this.log.info('Refreshing home status: ', this.config.name);
-    this.netatmoAPI.getHomeDevices().then((status) => {
-      this.log.info('Home status: ' + status);
-      this.status = status;
-      this.log.info('Refreshed home status: ', this.config.name);
-    });
+    this.discoverDevices();
   }
 
 }
