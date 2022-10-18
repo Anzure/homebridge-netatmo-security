@@ -15,7 +15,7 @@ export default class NetatmoAPI {
   async init(configuration) {
     this.config = configuration;
     await this.authenticate();
-    this.log.info('Netatmo API loaded.');
+    this.log.debug('Netatmo API loaded.');
   }
 
   async authenticate() {
@@ -40,13 +40,13 @@ export default class NetatmoAPI {
       },
     });
     const data = response.data;
-    this.log.debug('Authentication response: ' + response);
+    //this.log.debug('Authentication response: ' + JSON.stringify(response.data));
     const token = data.access_token;
     this.refreshToken = data.refresh_token;
     this.tokenExpire = (new Date().getTime() / 1000) + 9000;
-    this.log.info('Access token: ' + token);
+    this.log.debug('Access token: ' + token);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    this.log.info('Authentication complete');
+    this.log.debug('Authentication complete');
   }
 
   API() {
@@ -73,8 +73,10 @@ export default class NetatmoAPI {
         },
       ],
     }};
+    this.log.debug('Set State request: ' + JSON.stringify(body));
     const response = await this.API().post('/setstate', body);
     const data = response.data;
+    this.log.debug('Set State response: ' + JSON.stringify(response.data));
     return data;
   }
 
@@ -82,6 +84,7 @@ export default class NetatmoAPI {
     const response = await this.API().get('/getevents?home_id=' + homeId);
     const data = response.data.body.home;
     const events = data.events;
+    //this.log.debug('Get Events response: ' + JSON.stringify(response.data));
     return events;
   }
 
@@ -89,6 +92,7 @@ export default class NetatmoAPI {
     const response = await this.API().get('/homesdata');
     const data = response.data.body;
     const home = data.homes[0];
+    //this.log.debug('Home Data response: ' + JSON.stringify(response.data));
     return home;
   }
 
@@ -96,16 +100,17 @@ export default class NetatmoAPI {
     const response = await this.API().get('/homestatus?home_id=' + homeId);
     const data = response.data.body;
     const status = data.home;
+    //this.log.debug('Home Status response: ' + JSON.stringify(response.data));
     return status;
   }
 
   async getHomeDevices() {
     const home = await this.getHomeData();
-    this.log.info('Total devices found: ' + home.modules.length);
+    //this.log.debug('Total devices found: ' + home.modules.length);
     const status = await this.getHomeStatus(home.id);
-    this.log.info('Devices with status: ' + status.modules.length);
+    //this.log.debug('Devices with status: ' + status.modules.length);
     const events = await this.getEvents(home.id);
-    this.log.info('Total events found: ' + events.length);
+    //this.log.debug('Total events found: ' + events.length);
     const devices = [];
     home.modules.map((moduleInfo) => {
       const moduleStatus = status.modules.find((module) => moduleInfo.id === module.id);
@@ -117,11 +122,12 @@ export default class NetatmoAPI {
         category: moduleInfo.category,
         setup_date: moduleInfo.setup_date,
         room_id: moduleInfo.room_id,
+        home_id: home.id,
         activity: lastActivity,
       };
       devices.push(device);
     });
-    this.log.info('Total ready devices: ' + devices.length);
+    //this.log.debug('Total ready devices: ' + devices.length);
     return devices;
   }
 

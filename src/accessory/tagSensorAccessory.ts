@@ -1,12 +1,13 @@
+/* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Service, PlatformAccessory, CharacteristicValue, Nullable } from 'homebridge';
+import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
 import { NetatmoSecurityPlatform } from '../platform';
 
 export class TagSensorAccessory {
   private service: Service;
   private state = {
-    ContactSensorStatus: '',
-    ObstructionDetected: 0,
+    SensorStatus: 'unknown',
+    TamperStatus: 0,
   };
 
   // Load device
@@ -21,49 +22,60 @@ export class TagSensorAccessory {
 
     this.service = this.accessory.getService(this.platform.Service.ContactSensor)
     || this.accessory.addService(this.platform.Service.ContactSensor);
-    this.service.setCharacteristic(this.platform.Characteristic.Name, this.accessory.context.device.name);
-    this.service.getCharacteristic(this.platform.Characteristic.ContactSensorState)
-      .onGet(this.getOpen.bind(this));
 
-    /*const vibration = this.accessory.getService(this.platform.Service.MotionSensor)
-      || this.accessory.addService(this.platform.Service.MotionSensor);
-    vibration.setCharacteristic(this.platform.Characteristic.Name, this.accessory.context.device.name + ' Vibration Sensor');*/
+    this.service.setCharacteristic(this.platform.Characteristic.Name, this.accessory.context.device.name);
+
+    this.service.getCharacteristic(this.platform.Characteristic.ContactSensorState)
+      .onGet(this.isOpen.bind(this));
+
+    this.service.getCharacteristic(this.platform.Characteristic.StatusTampered)
+      .onGet(this.isTampered.bind(this));
 
     setInterval(() => {
       try {
-        this.platform.log.debug('Contact sensor status for ' + accessory.displayName + ' accessory: ' + this.accessory.context.device.status + ' (' + this.state.ContactSensorStatus + ')');
         const contactDetected = this.accessory.context.device.status === 'open';
-        if (this.accessory.context.device.status !== this.state.ContactSensorStatus) {
-          this.platform.log.info('Triggering contactSensorService:' + contactDetected + ' (' + this.accessory.context.device.status + ')');
+
+        if (this.accessory.context.device.status !== this.state.SensorStatus) {
+          this.platform.log.info(accessory.displayName + ' Sensor Status: ' + contactDetected + ' (' + this.state.SensorStatus + ' -> ' + this.accessory.context.device.status + ')');
         }
-        this.state.ContactSensorStatus = this.accessory.context.device.status;
+
+        this.state.SensorStatus = this.accessory.context.device.status;
         this.service.updateCharacteristic(this.platform.Characteristic.ContactSensorState, contactDetected);
+
       } catch (error) {
-        this.platform.log.info('Failing contactSensorService', error);
+        this.platform.log.error('Failed to update contact sensor status', error);
       }
 
-      /*try {
-        this.platform.log.debug('Vibration sensor status for ' + accessory.displayName + ' accessory: ' + this.accessory.context.device.activity + ' (' + this.state.ObstructionDetected + ')');
-        if (this.accessory.context.device.activity !== null && this.accessory.context.device.activity !== undefined) {
-          if (this.accessory.context.device.activity !== this.state.ObstructionDetected && this.accessory.context.device.activity > 0) {
-            const minimumTime = (new Date().getTime() / 1000) - 90;
-            const vibrationDetected = this.accessory.context.device.activity > this.state.ObstructionDetected && this.accessory.context.device.activity > minimumTime;
-            const timePassed = this.accessory.context.device.activity - this.state.ObstructionDetected;
-            this.platform.log.info('Triggering vibrationSensorService: ' + vibrationDetected + ' (' + timePassed + ')');
-            this.state.ObstructionDetected = this.accessory.context.device.activity;
-            vibration.updateCharacteristic(this.platform.Characteristic.ObstructionDetected, vibrationDetected);
-          }
-        }
-      } catch (error) {
-        this.platform.log.info('Failing vibrationSensorService', error);
-      }*/
+      try {
+        const timeTampered = this.accessory.context.device.activity ? this.accessory.context.device.activity : 0;
+        const minimumTime = (new Date().getTime() / 1000) - 90;
+        const tamperingDetected = timeTampered > this.state.TamperStatus || timeTampered > minimumTime;
 
-    }, 30000);
+        if (this.accessory.context.device.activity !== this.state.TamperStatus) {
+          this.platform.log.info(accessory.displayName + ' Tampered Status: ' + tamperingDetected + ' (' + this.state.TamperStatus + ' -> ' + this.accessory.context.device.activity + ')');
+        } else if (tamperingDetected === true) {
+          this.platform.log.debug(accessory.displayName + ' Tampered Status: ' + tamperingDetected + ' (' + this.state.TamperStatus + ' -> ' + this.accessory.context.device.activity + ')');
+        }
+
+        this.state.TamperStatus = this.accessory.context.device.activity;
+        this.service.updateCharacteristic(this.platform.Characteristic.StatusTampered, tamperingDetected);
+
+      } catch (error) {
+        this.platform.log.error('Failed to update tampered sensor status', error);
+      }
+    }, 5000);
   }
 
-  async getOpen(): Promise<CharacteristicValue> {
-    const isOpen = this.state.ContactSensorStatus === 'open' || this.accessory.context.device.status === 'open';
-    this.platform.log.debug('Get Characteristic ContactSensorState -> ' + this.state.ContactSensorStatus + ' (' + this.accessory.context.device.status + ')');
+  async isTampered(): Promise<CharacteristicValue> {
+    const minimumTime = (new Date().getTime() / 1000) - 90;
+    const isTampered = this.state.TamperStatus > minimumTime || this.accessory.context.device.activity > minimumTime;
+    this.platform.log.debug(this.accessory.displayName + ' Tampered Characteristic: ' + isTampered + ' (' + this.state.TamperStatus + ' / ' + this.accessory.context.device.activity + ')');
+    return isTampered;
+  }
+
+  async isOpen(): Promise<CharacteristicValue> {
+    const isOpen = this.state.SensorStatus === 'open' || this.accessory.context.device.status === 'open';
+    this.platform.log.debug(this.accessory.displayName + ' Sensor Characteristic: ' + isOpen + ' (' + this.state.SensorStatus + ' / ' + this.accessory.context.device.status + ')');
     return isOpen;
   }
 

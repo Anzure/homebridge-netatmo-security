@@ -32,5 +32,8 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "jsFileHeader.Copyright": "Odit AS [NO]",
-  "jsFileHeader.Author": "Andre Mathisen"
+  "jsFileHeader.Author": "Andre Mathisen",
+  "[typescript]": {
+    "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
+  }
 }
