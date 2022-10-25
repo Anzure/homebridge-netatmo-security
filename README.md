@@ -8,15 +8,13 @@ Get extended HomeKit support for Netatmo Security products.
 
 ## Development
 This plugin is under development, and is not ready to use.
-Please wait until the official. Use at your OWN risk!
 
-Supported accessories:
-- [] Netatmo Welcome
-- [x] Netatmo Tag Sensor
-- [] Netatmo Indoor Siren
-- [] Netatmo Outdoor Camera
+Supported or partially supported accessories:
+- Netatmo Tag Sensor
+- Netatmo Indoor Siren
+- Netatmo Welcome
 
-Feel free to send us suggestions.
+Please wait until the release. Use at your OWN risk!
 
 ## Getting started
 
@@ -25,6 +23,7 @@ You need to generate your own Client ID and Client Secret:
 1. Sign in to https://dev.netatmo.com (or create your first account)
 2. Login in to your existing account, or create your first account.
 3. Create a new application here: https://dev.netatmo.com/apps
+
 More information here: https://dev.netatmo.com/apidocumentation/oauth
 
 ### Install plugin
