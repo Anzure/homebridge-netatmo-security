@@ -6,9 +6,17 @@
 ## About plugin
 Get extended HomeKit support for Netatmo Security products.
 
-## Disclaimer
+## Development
 This plugin is under development, and is not ready to use.
 Please wait until the official. Use at your OWN risk!
+
+Supported accessories:
+- [] Netatmo Welcome
+- [x] Netatmo Tag Sensor
+- [] Netatmo Indoor Siren
+- [] Netatmo Outdoor Camera
+
+Feel free to send us suggestions.
 
 ## Getting started
 

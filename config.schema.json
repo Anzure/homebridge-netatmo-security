@@ -9,13 +9,16 @@
         "title": "Name",
         "type": "string",
         "required": true,
-        "default": "Netatmo Security Platform"
+        "default": "Netatmo Security Platform",
+        "description": "Plugin display name"
       },
       "client_id": {
         "title": "Client ID",
         "type": "string",
         "required": true,
-        "default": ""
+        "default": "",
+        "placeholder": "Generated client id from dev.netatmo.com/apps",
+        "description": "OAuth 2.0 client for Netatmo API app"
       },
       "client_secret": {
         "title": "Client Secret",
@@ -24,21 +27,27 @@
         "default": "",
         "condition": {
           "functionBody": "return model.hide_client_secret === false || model.hide_client_secret.length <= 0;"
-        }
+        },
+        "placeholder": "Generated client secret from dev.netatmo.com/apps",
+        "description": "OAuth 2.0 secret for Netatmo API app"
       },
       "hide_client_secret": {
         "title": "Hide Client Secret?",
         "type": "boolean",
         "default": false,
+        "required": true,
         "condition": {
           "functionBody": "return model.client_secret != null && model.client_secret.length > 0;"
-        }
+        },
+        "description": "Secure client secret by hiding it"
       },
       "username": {
         "title": "Username",
         "type": "string",
         "required": true,
-        "default": ""
+        "default": "",
+        "placeholder": "Enter your Netatmo username",
+        "description": "Email or username for Netatmo login"
       },
       "password": {
         "title": "Password",
@@ -47,15 +56,53 @@
         "default": "",
         "condition": {
           "functionBody": "return model.hide_password === false || model.password.length <= 0;"
-        }
+        },
+        "placeholder": "************",
+        "description": "Password used for Netatmo login"
       },
       "hide_password": {
         "title": "Hide Password?",
         "type": "boolean",
         "default": false,
+        "required": true,
         "condition": {
           "functionBody": "return model.password != null && model.password.length > 0;"
-        }
+        },
+        "description": "Secure user password by hiding it"
+      },
+      "webhook_scheme": {
+        "title": "Webhook Scheme",
+        "type": "string",
+        "default": "http",
+        "oneOf": [
+          { "title": "Use HTTP", "enum": ["http"] },
+          { "title": "Use HTTPS", "enum": ["https"] }
+        ],
+        "description": "Web protocol used in URL",
+        "required": true
+      },
+      "webhook_host": {
+        "title": "Webhook Host",
+        "type": "string",
+        "required": false,
+        "default": "",
+        "placeholder": "xx.xx.xx.xx",
+        "description": "Public IP or Domain"
+      },
+      "webhook_port": {
+        "title": "Webhook Port",
+        "type": "string",
+        "required": false,
+        "default": "",
+        "placeholder": "3000",
+        "description": "Local listen port"
+      },
+      "enable_webhook": {
+        "title": "Enable Webhook?",
+        "type": "boolean",
+        "default": false,
+        "required": false,
+        "description": "Requires port forwarding"
       }
     }
   }
